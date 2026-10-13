@@ -1,0 +1,585 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --blue: #1976d2;
+    --blue-dark: #0d47a1;
+    --green: #00c853;
+    --red: #d32f2f;
+    --gray: #757575;
+    --bg: #f2f4f7;
+    --card: #ffffff;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+body {
+    font-family: Arial, "Noto Sans Thai", sans-serif;
+    background: var(--bg);
+    color: #222;
+    min-height: 100%;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+button {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+    font-family: inherit;
+}
+
+button:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
+
+input {
+    font-family: inherit;
+    font-size: 15px;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+/* ============ TOP BAR ============ */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    padding: 14px 18px;
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.topbar h1 {
+    font-size: 20px;
+}
+
+.topbar-sub {
+    font-size: 11px;
+    color: #777;
+    margin-top: 2px;
+}
+
+.menu-btn {
+    background: transparent;
+    color: #222;
+    font-size: 26px;
+    padding: 4px 10px;
+}
+
+/* ============ SIDE MENU (มุมขวา) ============ */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 29;
+}
+
+.overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(300px, 85vw);
+    background: var(--card);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+.side-menu.open {
+    transform: translateX(0);
+}
+
+.side-menu-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+}
+
+.icon-btn {
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.menu-item {
+    background: transparent;
+    color: #222;
+    text-align: left;
+    border-radius: 0;
+    padding: 16px 18px;
+    font-size: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.menu-item.active {
+    background: #e3f2fd;
+    color: var(--blue-dark);
+    font-weight: bold;
+}
+
+/* ============ LAYOUT ============ */
+.app-layout {
+    max-width: 1200px;
+    margin: auto;
+    padding: 16px;
+}
+
+.mode {
+    display: none;
+}
+
+.mode.active {
+    display: block;
+}
+
+.card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+/* ============ MODE 1: แปลภาษามือ ============ */
+.stage {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.camera-pane {
+    position: sticky;
+    top: 86px;
+}
+
+.camera-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #111;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.camera-container:fullscreen,
+.camera-container:-webkit-full-screen {
+    aspect-ratio: auto;
+    border-radius: 0;
+}
+
+#video {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    /* ต้องเป็น fill เท่านั้น ไม่ใช่ cover/contain
+       เพราะ canvas ถูกยืดแบบ fill เสมอ (ไม่รองรับ object-fit)
+       ถ้า video ใช้ cover ภาพจะถูกครอบ/ครอปไม่ตรงกับตำแหน่งจุดมือใน canvas */
+    object-fit: fill;
+}
+
+#video.mirror {
+    transform: scaleX(-1);
+}
+
+#canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.cam-top-controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+}
+
+.cam-top-right {
+    display: flex;
+    gap: 8px;
+}
+
+.status {
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+.status.off { color: #ff6b6b; }
+.status.on { color: #69f0ae; }
+
+/* คำอธิบาย/ผลลัพธ์ ซ้อนอยู่ในจอกล้องด้านล่าง */
+.caption-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75) 40%);
+    color: #fff;
+    padding: 28px 14px 14px;
+    font-size: 16px;
+    line-height: 1.5;
+    text-align: center;
+    pointer-events: none;
+}
+
+.button-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+#stopButton { background: var(--red); }
+
+#sign {
+    background: #f5f5f5;
+    border-radius: 12px;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: bold;
+    padding: 10px;
+    text-align: center;
+}
+
+.confidence-wrap {
+    margin-top: 12px;
+}
+
+.confidence-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.confidence-bar {
+    background: #e0e0e0;
+    border-radius: 10px;
+    height: 12px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff7043, #ffca28, #66bb6a);
+    transition: width 0.2s;
+}
+
+#sentence {
+    background: #f5f5f5;
+    border-radius: 12px;
+    min-height: 80px;
+    padding: 18px;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sentence-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+#speakButton { background: #388e3c; }
+#clearButton { background: var(--gray); }
+
+#wordHistory {
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 44px;
+    font-size: 16px;
+}
+
+/* ============ รายการคำศัพท์เป้าหมาย ============ */
+.vocab-hint {
+    font-size: 12px;
+    color: #777;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+details {
+    margin-bottom: 8px;
+}
+
+summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 8px 0;
+}
+
+.vocab-list {
+    list-style: none;
+    padding-left: 4px;
+    font-size: 14px;
+}
+
+.vocab-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 4px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.vocab-list .vocab-note {
+    color: #888;
+    font-size: 12px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.vocab-list li.covered .vocab-word {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+/* ============ MODE 2: ฉุกเฉิน ============ */
+.emergency-note p {
+    color: #555;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.emergency-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.emergency-btn {
+    background: var(--red);
+    border-radius: 16px;
+    padding: 18px 10px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.emergency-btn .num {
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.emergency-btn .label {
+    font-size: 13px;
+}
+
+.emergency-btn.alt { background: var(--blue); }
+
+.contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.contact-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.contact-row a {
+    color: var(--blue-dark);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.contact-row button {
+    background: var(--gray);
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.contact-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+}
+
+/* ============ MODE 3: คู่สนทนา ============ */
+.call-note p {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.call-room-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.call-room-row input {
+    flex: 1;
+    min-width: 160px;
+}
+
+.room-info {
+    margin-top: 12px;
+    font-size: 15px;
+}
+
+.room-code {
+    font-family: monospace;
+    font-size: 20px;
+    font-weight: bold;
+    background: #f5f5f5;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-top: 6px;
+}
+
+.call-screens {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.call-screen {
+    position: relative;
+    background: #111;
+    border-radius: 16px;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+}
+
+.call-screen video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.call-screen-label {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    z-index: 2;
+}
+
+.remote-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-size: 14px;
+}
+
+#callEndBtn { background: var(--red); }
+
+/* ============ RESPONSIVE: tablet & mobile ============ */
+@media (max-width: 900px) {
+    .stage {
+        grid-template-columns: 1fr;
+    }
+    .camera-pane {
+        position: static;
+    }
+}
+
+@media (max-width: 700px) {
+    .app-layout {
+        padding: 10px;
+    }
+    .topbar h1 {
+        font-size: 17px;
+    }
+    .button-group,
+    .sentence-buttons {
+        grid-template-columns: 1fr;
+    }
+    .contact-form {
+        grid-template-columns: 1fr;
+    }
+    .call-screens {
+        grid-template-columns: 1fr;
+    }
+}
